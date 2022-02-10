@@ -1,0 +1,33 @@
+{
+  "name": "nodecg-gdq-tracker-import",
+  "version": "1.0.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Corvimae/nodecg-gdq-tracker-import"
+  },
+  "author": "Corvimae",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Corvimae/nodecg-gdq-tracker-import/issues"
+  },
+  "dependencies": {
+    "isomorphic-fetch": "^3.0.0",
+    "uuid": "^8.3.2"
+  },
+  "homepage": "https://github.com/Corvimae/nodecg-gdq-tracker-import#readme",
+  "nodecg": {
+    "compatibleRange": "^1.5.0",
+    "bundleDependencies": {
+      "nodecg-speedcontrol": "^2.0.0"
+    },
+    "dashboardPanels": [
+      {
+        "name": "tracker-import",
+        "title": "GDQ Tracker Import",
+        "file": "tracker-import.html",
+        "width": 2,
+        "workspace": "Run Modifications"
+      }
+    ]
+  }
+}

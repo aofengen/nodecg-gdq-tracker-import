@@ -1,0 +1,32 @@
+.import-settings {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+}
+
+.input-row {
+  display: contents;
+}
+
+.input-row + .input-row > * {
+  margin-top: 0.5rem;
+}
+
+.input-row label {
+  text-align: right;
+  margin-right: 0.5rem;
+}
+
+.start-import {
+  margin-top: 0.5rem;
+  grid-column: 1 / -1;
+}
+
+.status-text {
+  grid-column: 1 / -1;
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.hidden {
+  display: none;
+}
