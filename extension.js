@@ -54,7 +54,7 @@ module.exports = nodecg => {
 
           const runData = {
             teams: [],
-            id: matchesExistingRun?.id ?? uuid(),
+            id: (matchesExistingRun ? matchesExistingRun.id : null) || uuid(),
             externalID: run.pk.toString(),
             customData: {},
           };
@@ -88,7 +88,7 @@ module.exports = nodecg => {
               name: runnerData.fields.name,
               teamID: team.id,
               social: {
-                twitch: runnerData.fields.stream?.replace('http://twitch.tv/', '').replace('https://twitch.tv/', '').replace('twitch.tv/', '') ?? undefined,
+                twitch: runnerData.fields.stream ? runnerData.fields.stream.replace('http://twitch.tv/', '').replace('https://twitch.tv/', '').replace('twitch.tv/', '') : undefined,
               },
               pronouns: runnerData.fields.pronouns || undefined,
               customData: {},
