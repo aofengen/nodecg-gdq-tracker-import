@@ -61,7 +61,7 @@ module.exports = nodecg => {
 
           runData.game = run.fields.display_name || undefined;
           runData.system = run.fields.console || undefined;
-          runData.release = run.fields.release_year || undefined;
+          runData.release = run.fields.release_year?.toString() ?? undefined;
           runData.category = run.fields.category || undefined;
           runData.estimate = run.fields.run_time;
           runData.estimateS = durationToSeconds(run.fields.run_time);
