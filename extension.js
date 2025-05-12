@@ -2,10 +2,10 @@ const fetch = require('isomorphic-fetch');
 const { v4: uuid } = require('uuid');
 
 module.exports = nodecg => {
-  async function fetchTrackerData(baseURL, type, eventID) {
+  async function fetchTrackerData(baseURL, eventID) {
     const normalizedBaseURL = baseURL.endsWith('/') ? baseURL.substr(0, baseURL.length - 1) : baseURL;
 
-    const response = await fetch(`${normalizedBaseURL}/search?type=${type}&event=${eventID}`);
+    const response = await fetch(`${normalizedBaseURL}/api/v2/events/${eventID}/runs`);
 
     return await response.json();
   }
@@ -32,7 +32,7 @@ module.exports = nodecg => {
 
   const runDataArray = nodecg.Replicant('runDataArray', 'nodecg-speedcontrol');
 
-  nodecg.listenFor('importGDQTrackerSchedule', async ({ trackerURL, eventID }, ack) => {
+  nodecg.listenFor('importGDQTrackerSchedule', async ({ trackerURL, eventID, customData }, ack) => {
     nodecg.log.info('[GDQ Tracker Import] Schedule import started...');
 
     gdqTrackerImportStatus.value = {
@@ -42,66 +42,101 @@ module.exports = nodecg => {
     }
 
     try {
-      const [runners, runs] = await Promise.all([
-        fetchTrackerData(trackerURL, 'runner', eventID),
-        fetchTrackerData(trackerURL, 'run', eventID),
-      ]);
+      const runList = await fetchTrackerData(trackerURL, eventID)
 
-      runDataArray.value = runs
-        .filter(({ fields }) => fields.order !== null && fields.order !== undefined)
-        .map(run => {
-          const matchesExistingRun = runDataArray.value.find(oldRun => oldRun.externalID === run.pk.toString());
+      // const trackerData = await fetch(`https://tracker.preventathon.com/tracker/api/v2/events/${eventID}/runs`);
+      // const runList = await trackerData.json();
 
-          const runData = {
+      let runArray = new Array();
+      for(let i = 0; i < runList.count; i++) {
+        // nodecg.log.info(`Run being processed: ${runList.results[i].name}`)
+
+        let currentRun = runList.results[i];
+
+          const newObj = {
             teams: [],
-            id: (matchesExistingRun ? matchesExistingRun.id : null) || uuid(),
-            externalID: run.pk.toString(),
+            id: i.toString(),
+            externalID: currentRun.id.toString(),
             customData: {},
           };
 
-          runData.game = run.fields.display_name || undefined;
-          runData.system = run.fields.console || undefined;
-          runData.release = run.fields.release_year?.toString() ?? undefined;
-          runData.category = run.fields.category || undefined;
-          runData.estimate = run.fields.run_time;
-          runData.estimateS = durationToSeconds(run.fields.run_time);
-          runData.setupTime = run.fields.setup_time;
-          runData.setupTimeS = durationToSeconds(run.fields.setup_time);
-          runData.gameTwitch = run.fields.twitch_name;
-          runData.scheduled = run.fields.starttime;
-          runData.scheduledS = Math.floor(Date.parse(run.fields.starttime) / 1000) + runData.setupTimeS + runData.estimateS;
-          runData.teams = run.fields.runners.map(runnerId => {
-            const team = {
-              id: uuid(),
-              players: [],
-            };
+          newObj.game = currentRun.name;
+          newObj.category = currentRun.category;
+          newObj.system = currentRun.console;
+          newObj.release = currentRun.release_year?.toString() ?? undefined;
+          newObj.estimate = currentRun.run_time;
+          newObj.estimateS = durationToSeconds(currentRun.run_time);
+          newObj.setupTime = currentRun.setup_time;
+          newObj.setupTimeS = durationToSeconds(currentRun.setup_time);
+          newObj.gameTwitch = currentRun.twitch_name;
+          newObj.scheduled = currentRun.starttime;
+          newObj.scheduledS = Math.floor(Date.parse(currentRun.starttime) / 1000) + newObj.setupTimeS + newObj.estimateS;
+         
+          const team = {
+            id: uuid(),
+            players: [],
+          }
 
-            const runnerData = runners.find(({ pk }) => pk === runnerId);
-            
-            if (!runnerData) {
-              nodecg.log.warn(`[GDQ Tracker Import] No runner data found for the runner with ID ${runnerId}.`);
-
-              return team;
-            }
-
+          if (currentRun.runners.length == 1) {
             const runner = {
               id: uuid(),
-              name: runnerData.fields.name,
+              name: currentRun.runners[0].name,
               teamID: team.id,
               social: {
-                twitch: runnerData.fields.stream ? runnerData.fields.stream.replace('http://twitch.tv/', '').replace('https://twitch.tv/', '').replace('twitch.tv/', '') : undefined,
+                twitch: currentRun.runners[0].stream ? currentRun.runners[0].stream.replace('http://twitch.tv/', '').replace('https://twitch.tv/', '').replace('twitch.tv/', '') : undefined,
               },
-              pronouns: runnerData.fields.pronouns || undefined,
+              pronouns: currentRun.runners[0].pronouns || undefined,
               customData: {},
             };
+              team.players.push(runner);
+          } else {
+              for (let j = 0; j < currentRun.runners.length; j++) {
+                const runner = {
+                  id: uuid(),
+                  name: currentRun.runners[j].name,
+                  teamID: team.id,
+                  social: {
+                    twitch: currentRun.runners[j].stream ? currentRun.runners[j].stream.replace('http://twitch.tv/', '').replace('https://twitch.tv/', '').replace('twitch.tv/', '') : undefined,
+                  },
+                  pronouns: currentRun.runners[j].pronouns || undefined,
+                  customData: {},
+                };
+                team.players.push(runner);
+              }
+          } 
 
-            team.players.push(runner);
+          newObj.teams.push(team);
 
-            return team;
-          });
+          if (customData) {
+            newObj.customData.layout = currentRun.layout ?? undefined;
+            if (currentRun.hosts.length == 0) {
+              newObj.customData.hostName = "None";
+              newObj.customData.hostPronouns = "";
+            } else {
+              newObj.customData.hostName = currentRun.hosts[0].name;
+              newObj.customData.hostPronouns = currentRun.hosts[0].pronouns != "" ? currentRun.hosts[0].pronouns : "No Pronouns";
+            }
 
-          return runData;
-        });
+            if (currentRun.commentators.length == 1) {
+                newObj.customData.commentator1Name = currentRun.commentators[0].name;
+                newObj.customData.commentator1Pronouns = currentRun.commentators[0].pronouns != "" ? currentRun.commentators[0].pronouns : "No Pronouns";
+            } 
+            if (currentRun.commentators.length == 2) {
+                newObj.customData.commentator2Name = currentRun.commentators[1].name;
+                newObj.customData.commentator2Pronouns = currentRun.commentators[1].pronouns != "" ? currentRun.commentators[1].pronouns : "No Pronouns";
+            }
+            if (currentRun.commentators.length == 3) {
+                newObj.customData.commentator3Name = currentRun.commentators[2].name;
+                newObj.customData.commentator3Pronouns = currentRun.commentators[2].pronouns != "" ? currentRun.commentators[1].pronouns : "No Pronouns";
+            }
+          }
+          
+          // nodecg.log.info(`Run processed: ${JSON.stringify(newObj)}`)
+            
+          runArray.push(newObj);
+          }
+      
+      runDataArray.value = runArray;
 
       gdqTrackerImportStatus.value = {
         isImporting: false,
@@ -110,9 +145,10 @@ module.exports = nodecg => {
       }
   
       nodecg.log.info('[GDQ Tracker Import] Schedule import complete!');
-      
+
       if (ack && !ack.handled) ack(null);
-    } catch (error) {
+    
+  } catch (error) {
       nodecg.log.warn('[GDQ Tracker Import] Schedule import failed:', error);
 
       gdqTrackerImportStatus.value = {
@@ -123,5 +159,6 @@ module.exports = nodecg => {
 
       if (ack && !ack.handled) ack(error);
     }
-  });
+  
+});
 };

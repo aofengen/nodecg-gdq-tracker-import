@@ -39,10 +39,12 @@
   document.querySelector('.start-import').addEventListener('click', () => {
     const trackerURL = document.querySelector('#trackerURL').value;
     const eventID = document.querySelector('#eventID').value;
+    const customData = document.querySelector('#customData').checked;
     
     nodecg.sendMessage('importGDQTrackerSchedule', {
       trackerURL,
       eventID,
+      customData
     });
   });
 })();
