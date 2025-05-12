@@ -5,7 +5,7 @@
     "type": "git",
     "url": "git+https://github.com/aofengen/nodecg-gdq-tracker-import"
   },
-  "author": "Corvimae",
+  "author": "aofengen",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/aofengen/nodecg-gdq-tracker-import/issues"
@@ -16,9 +16,9 @@
   },
   "homepage": "https://github.com/aofengen/nodecg-gdq-tracker-import#readme",
   "nodecg": {
-    "compatibleRange": "^1.5.0",
+    "compatibleRange": "^2.5.3",
     "bundleDependencies": {
-      "nodecg-speedcontrol": "^2.0.0"
+      "nodecg-speedcontrol": "^2.6.0"
     },
     "dashboardPanels": [
       {
