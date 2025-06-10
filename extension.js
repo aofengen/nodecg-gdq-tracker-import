@@ -44,9 +44,6 @@ module.exports = nodecg => {
     try {
       const runList = await fetchTrackerData(trackerURL, eventID)
 
-      // const trackerData = await fetch(`https://tracker.preventathon.com/tracker/api/v2/events/${eventID}/runs`);
-      // const runList = await trackerData.json();
-
       let runArray = new Array();
       for(let i = 0; i < runList.count; i++) {
         // nodecg.log.info(`Run being processed: ${runList.results[i].name}`)
@@ -117,18 +114,20 @@ module.exports = nodecg => {
               newObj.customData.hostPronouns = currentRun.hosts[0].pronouns != "" ? currentRun.hosts[0].pronouns : "No Pronouns";
             }
 
-            if (currentRun.commentators.length == 1) {
-                newObj.customData.commentator1Name = currentRun.commentators[0].name;
-                newObj.customData.commentator1Pronouns = currentRun.commentators[0].pronouns != "" ? currentRun.commentators[0].pronouns : "No Pronouns";
-            } 
-            if (currentRun.commentators.length == 2) {
+            if (currentRun.commentators.length >= 0) {
+              if (currentRun.commentators.length >= 1) {
+                if (currentRun.commentators.length >= 2) {
+                  newObj.customData.commentator3Name = currentRun.commentators[2].name;
+                  newObj.customData.commentator3Pronouns = currentRun.commentators[2].pronouns != "" ? currentRun.commentators[1].pronouns : "No Pronouns";
+                }
                 newObj.customData.commentator2Name = currentRun.commentators[1].name;
                 newObj.customData.commentator2Pronouns = currentRun.commentators[1].pronouns != "" ? currentRun.commentators[1].pronouns : "No Pronouns";
-            }
-            if (currentRun.commentators.length == 3) {
-                newObj.customData.commentator3Name = currentRun.commentators[2].name;
-                newObj.customData.commentator3Pronouns = currentRun.commentators[2].pronouns != "" ? currentRun.commentators[1].pronouns : "No Pronouns";
-            }
+             }
+              newObj.customData.commentator1Name = currentRun.commentators[0].name;
+              newObj.customData.commentator1Pronouns = currentRun.commentators[0].pronouns != "" ? currentRun.commentators[0].pronouns : "No Pronouns";
+            } 
+            
+            
           }
           
           // nodecg.log.info(`Run processed: ${JSON.stringify(newObj)}`)
